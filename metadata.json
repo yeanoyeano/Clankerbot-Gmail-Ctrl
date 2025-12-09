@@ -1,0 +1,5 @@
+{
+  "name": "Clankerbot Control",
+  "description": "Provide a Google Chat webhook URL and a message to reply to. Gemini will generate a context-aware reply and post it directly to your chat space.",
+  "requestFramePermissions": []
+}
