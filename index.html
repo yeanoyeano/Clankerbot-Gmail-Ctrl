@@ -102,19 +102,24 @@
         }
 
         const ai = new GoogleGenAI({ apiKey: apiKey });
-        const prompt = `Here is the message to reply to:\n\n"""\n${chatMessage}\n"""`;
+
+        // Strengthened prompt engineering:
+        // 1. Remove "helpful assistant" if user provides custom instructions.
+        // 2. Inject instructions into both system instruction and the main prompt for maximum adherence.
+        
+        const baseSystemPrompt = instructions
+          ? `You are a participant in a chat conversation. Your personality and response style must strictly adhere to the following instructions: "${instructions}". Do not break character. Do not be a generic assistant unless the instructions ask for it.`
+          : `You are a helpful assistant in a group chat. Your task is to write a concise and professional reply.`;
+          
+        const userPrompt = `Incoming Chat Message:\n"""\n${chatMessage}\n"""\n\nTask: Write a reply to the message above.${instructions ? `\n\nStyle/Instructions:\n${instructions}` : ''}`;
 
         if (count === 1) {
-          const systemInstruction = instructions
-            ? `You are a helpful assistant in a group chat. Your task is to write a reply. Follow these instructions for the reply: ${instructions}`
-            : `You are a helpful assistant in a group chat. Your task is to write a concise and professional reply.`;
-
           try {
             const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
-              contents: prompt,
+              contents: userPrompt,
               config: {
-                systemInstruction: systemInstruction,
+                systemInstruction: baseSystemPrompt,
               },
             });
             return [response.text];
@@ -123,16 +128,17 @@
             throw new Error("Failed to get response from Gemini. Please check your API key and connection.");
           }
         } else {
-          const systemInstruction = `You are a helpful assistant in a group chat. Your task is to write ${count} different and varied replies to a message.
-            ${instructions ? `Follow these general instructions for all replies: ${instructions}` : 'The replies should be concise and professional.'}
-            Return the replies as a JSON object with a single key "replies" which is an array of strings. Each string in the array is a distinct reply.`;
+          // For multiple replies, we need a specific JSON schema prompt, but we still apply the personality strongly.
+          const multiReplySystemPrompt = instructions
+            ? `You are a participant in a chat. Generate ${count} distinct versions of a reply. Personality/Style: "${instructions}". Return JSON.`
+            : `You are a helpful assistant. Generate ${count} distinct professional replies. Return JSON.`;
 
           try {
             const response = await ai.models.generateContent({
               model: 'gemini-2.5-flash',
-              contents: prompt,
+              contents: userPrompt,
               config: {
-                systemInstruction: systemInstruction,
+                systemInstruction: multiReplySystemPrompt,
                 responseMimeType: "application/json",
                 responseSchema: {
                   type: Type.OBJECT,
