@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Status } from '../types';
 
@@ -7,55 +6,42 @@ interface StatusMessageProps {
   message: string;
 }
 
-const LoadingSpinner: React.FC = () => (
-  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-);
-
-const SuccessIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const ErrorIcon: React.FC = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
 const StatusMessage: React.FC<StatusMessageProps> = ({ status, message }) => {
-  if (status === Status.IDLE) {
-    return null;
-  }
+  if (status === Status.IDLE) return <div className="text-xs text-slate-500 italic">Ready for command.</div>;
 
-  let icon;
-  let textContent;
-  let textColor = 'text-gray-300';
+  let bgClass = '';
+  let textClass = '';
+  let borderClass = '';
 
   switch (status) {
     case Status.LOADING:
-      icon = <LoadingSpinner />;
-      textContent = 'Sending...';
-      textColor = 'text-blue-300';
+      bgClass = 'bg-blue-500/10';
+      textClass = 'text-blue-200';
+      borderClass = 'border-blue-500/30';
       break;
     case Status.SUCCESS:
-      icon = <SuccessIcon />;
-      textContent = message;
-      textColor = 'text-green-300';
+      bgClass = 'bg-green-500/10';
+      textClass = 'text-green-300';
+      borderClass = 'border-green-500/30';
       break;
     case Status.ERROR:
-      icon = <ErrorIcon />;
-      textContent = message;
-      textColor = 'text-red-300';
+      bgClass = 'bg-red-500/10';
+      textClass = 'text-red-300';
+      borderClass = 'border-red-500/30';
       break;
     default:
-      return null;
+      bgClass = 'bg-slate-700/30';
+      textClass = 'text-slate-300';
   }
 
   return (
-    <div className={`mt-4 p-3 rounded-lg flex items-center space-x-3 bg-gray-800 border border-gray-700 transition-all duration-300`}>
-      {icon}
-      <p className={`text-sm ${textColor}`}>{textContent}</p>
+    <div className={`p-3 rounded-lg border ${bgClass} ${borderClass} flex items-start gap-3 transition-all animate-in fade-in slide-in-from-top-2`}>
+        {status === Status.LOADING && (
+             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0 mt-0.5"></div>
+        )}
+        <div className={`text-xs font-medium leading-relaxed ${textClass}`}>
+            {message}
+        </div>
     </div>
   );
 };

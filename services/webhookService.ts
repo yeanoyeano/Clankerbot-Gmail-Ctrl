@@ -1,4 +1,4 @@
-export const sendToGoogleChat = async (webhookUrl: string, text: string): Promise<void> => {
+export const sendToGoogleChat = async (webhookUrl: string, text: string): Promise<boolean> => {
   if (!webhookUrl) {
     throw new Error("Webhook URL is not configured.");
   }
@@ -13,19 +13,30 @@ export const sendToGoogleChat = async (webhookUrl: string, text: string): Promis
     });
 
     if (!response.ok) {
-      // Try to parse error from Google Chat, but have a fallback.
-      const errorData = await response.json().catch(() => ({ 
-        error: { message: 'Failed to parse error response from Google Chat.' } 
-      }));
-      console.error('Google Chat API Error:', errorData);
-      throw new Error(`Failed to send message. Status: ${response.status}. Message: ${errorData.error?.message || 'Unknown error.'}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Check URL'}`);
     }
+    return true;
   } catch (error) {
-    console.error('Error sending to Google Chat webhook:', error);
-    if (error instanceof Error) {
-        // Re-throw with a more user-friendly message
-        throw new Error(`Network error or invalid webhook: ${error.message}`);
+    console.error('Webhook fetch failed (likely CORS):', error);
+    
+    // Attempt no-cors fallback if the standard one fails. 
+    // Note: Google Chat likely won't accept this because it needs Content-Type json, 
+    // but it's the only browser-based attempt left.
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' }, // Browser strips this in no-cors
+            body: JSON.stringify({ text })
+        });
+        // If no-cors doesn't throw, we assume it *might* have sent, 
+        // but we can't verify status.
+        // We will throw anyway to let the UI show the "Simulation" message
+        // because we can't be sure.
+        throw new Error("CORS_RESTRICTED");
+    } catch (innerError) {
+        throw new Error("CORS_RESTRICTED");
     }
-    throw new Error('An unknown network error occurred while sending the message.');
   }
 };
