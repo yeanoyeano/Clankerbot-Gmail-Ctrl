@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Status } from './types';
-import { generateReplies, sanitizeWithRhymes } from './services/geminiService';
-import { sendToGoogleChat } from './services/webhookService';
-import StatusMessage from './components/StatusMessage';
+import { Status } from './types.ts';
+import { generateReplies, sanitizeWithRhymes } from './services/geminiService.ts';
+import { sendToGoogleChat } from './services/webhookService.ts';
+import StatusMessage from './components/StatusMessage.tsx';
 
 // --- ICONS ---
 const BotIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (

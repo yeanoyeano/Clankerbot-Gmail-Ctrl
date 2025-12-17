@@ -19,6 +19,31 @@
       }
     }
     </script>
+    <script>
+      // Polyfill process.env for browser environments to prevent crashes
+      window.process = {
+        env: {
+          API_KEY: '' // This will be populated if you use a bundler, but prevents crash on static hosts
+        }
+      };
+      
+      // Error trap to show something on the screen if React fails to mount
+      window.addEventListener('error', function(e) {
+        if (document.body && !document.getElementById('root').hasChildNodes()) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.color = '#fff';
+            errorDiv.style.padding = '20px';
+            errorDiv.style.background = 'rgba(255,0,0,0.5)';
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.innerText = 'Application Error: ' + e.message;
+            document.body.appendChild(errorDiv);
+        }
+      });
+    </script>
     <style>
       body {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
@@ -67,7 +92,7 @@
   <body>
     <div id="root"></div>
 
-    <!-- Main Application Script - Placeholder for fallback if not using external file structure -->
+    <!-- Main Application Script -->
     <script type="text/babel" data-type="module" data-presets="react,typescript">
         import './index.tsx';
     </script>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Status } from '../types';
+import { Status } from '../types.ts';
 
 interface StatusMessageProps {
   status: Status;
