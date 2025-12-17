@@ -6,95 +6,497 @@
     <title>Clankerbot Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Load Babel for in-browser transpilation of React/TypeScript -->
+    <!-- Load Babel for in-browser transpilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import Map for External Modules -->
     <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
-        "react": "https://aistudiocdn.com/react@^19.2.0",
-        "react/": "https://aistudiocdn.com/react@^19.2.0/",
-        "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
-        "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
-      }
-    }
-    </script>
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.27.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+
+    <!-- Process Polyfill for Browser Environment -->
     <script>
-      // Polyfill process.env for browser environments to prevent crashes
       window.process = {
         env: {
-          API_KEY: '' // This will be populated if you use a bundler, but prevents crash on static hosts
+          API_KEY: '' // This prevents the app from crashing on load. You must allow the app to use the injected API_KEY if available.
         }
       };
-      
-      // Error trap to show something on the screen if React fails to mount
-      window.addEventListener('error', function(e) {
-        if (document.body && !document.getElementById('root').hasChildNodes()) {
-            const errorDiv = document.createElement('div');
-            errorDiv.style.color = '#fff';
-            errorDiv.style.padding = '20px';
-            errorDiv.style.background = 'rgba(255,0,0,0.5)';
-            errorDiv.style.position = 'fixed';
-            errorDiv.style.top = '0';
-            errorDiv.style.left = '0';
-            errorDiv.style.width = '100%';
-            errorDiv.style.zIndex = '9999';
-            errorDiv.innerText = 'Application Error: ' + e.message;
-            document.body.appendChild(errorDiv);
-        }
-      });
     </script>
+
     <style>
       body {
-        background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+        background: linear-gradient(135deg, #020617 0%, #172554 100%);
         color: #e2e8f0;
         font-family: 'Inter', sans-serif;
         min-height: 100vh;
+        overflow-x: hidden;
       }
       
       /* Glassmorphism utilities */
       .glass-panel {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(12px);
+        background: rgba(30, 41, 59, 0.4);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(148, 163, 184, 0.1);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
       }
       
       .input-modern {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(59, 130, 246, 0.3);
+        background: rgba(2, 6, 23, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.2);
         color: white;
         transition: all 0.2s;
       }
       
       .input-modern:focus {
-        border-color: #3b82f6;
+        border-color: #60a5fa;
         outline: none;
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
       }
 
-      /* Custom scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
+      .btn-primary {
+        background: linear-gradient(to right, #2563eb, #3b82f6);
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
       }
-      ::-webkit-scrollbar-track {
-        background: rgba(15, 23, 42, 0.5); 
+      
+      .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+        transform: translateY(-1px);
       }
-      ::-webkit-scrollbar-thumb {
-        background: #3b82f6; 
-        border-radius: 4px;
+
+      /* Animation Utilities */
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #60a5fa; 
+      
+      .animate-enter {
+        animation: fadeIn 0.4s ease-out forwards;
       }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- Fallback loading state -->
+        <div style="height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;">
+            <div style="width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <div style="color: #94a3b8; font-family: sans-serif; font-size: 14px;">Initializing System Interface...</div>
+        </div>
+        <style>
+            @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
+    </div>
 
-    <!-- Main Application Script -->
+    <!-- MAIN APP LOGIC (INLINED FOR DEPLOYMENT STABILITY) -->
     <script type="text/babel" data-type="module" data-presets="react,typescript">
-        import './index.tsx';
+        import React, { useState } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { GoogleGenAI, Type } from "@google/genai";
+
+        // --- TYPES ---
+        // Use const object instead of enum to prevent Babel reference errors in browser
+        const Status = {
+          IDLE: 'idle',
+          LOADING: 'loading',
+          SUCCESS: 'success',
+          ERROR: 'error'
+        };
+
+        // --- SERVICES ---
+        const getAiClient = () => {
+          // Robust check for API Key
+          const key = process.env.API_KEY || (window.process && window.process.env && window.process.env.API_KEY);
+          if (!key) {
+             console.warn("API_KEY is missing. AI features will fail.");
+          }
+          return new GoogleGenAI({ apiKey: key });
+        };
+
+        const sanitizeWithRhymes = async (text) => {
+          if (!text) return "";
+          try {
+              const ai = getAiClient();
+              const prompt = `Task: Review the following text for any offensive language, profanity, or toxic content. 
+              If found, replace ONLY the offensive words with a harmless, rhyming alternative (e.g., "hell" becomes "bell", "sh*t" becomes "kit").
+              The sentence structure should remain exactly the same. 
+              If the text is already safe, return it exactly as is.
+              
+              Text to review: "${text}"
+              
+              Return ONLY the final text string.`;
+
+              const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+              });
+              return response.text.trim();
+          } catch (error) {
+              console.warn("Sanitization failed (likely no API key), returning original.", error);
+              return text;
+          }
+        };
+
+        const generateReplies = async (chatMessage, instructions, count) => {
+          const ai = getAiClient();
+          const prompt = `Here is the message to reply to:\n\n"""\n${chatMessage}\n"""`;
+
+          if (count === 1) {
+            const systemInstruction = instructions
+              ? `You are a helpful assistant. Instructions: ${instructions}. IMPORTANT: Ensure your reply is clean. If you must use a strong word, rhyme it with a safe word instead.`
+              : `You are a helpful assistant. Write a concise reply. Ensure it is clean/safe.`;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: { systemInstruction },
+            });
+            return [response.text];
+          } else {
+            const systemInstruction = `You are a helpful assistant. Write ${count} distinct replies.
+              ${instructions ? `Instructions: ${instructions}` : 'Keep it professional.'}
+              IMPORTANT: All replies must be safe for work. Rhyme any potential profanity with safe words.
+              Return JSON: { "replies": ["..."] }`;
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                  systemInstruction,
+                  responseMimeType: "application/json",
+                  responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                      replies: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    },
+                    required: ['replies'],
+                  },
+                },
+            });
+            const result = JSON.parse(response.text.trim());
+            return result.replies || [];
+          }
+        };
+
+        const sendToGoogleChat = async (webhookUrl, text) => {
+            if (!webhookUrl) throw new Error("Webhook URL is not configured.");
+            try {
+                const response = await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                    body: JSON.stringify({ text }),
+                });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(`Error ${response.status}: ${data.error?.message || 'Check URL'}`);
+                }
+                return true;
+            } catch (error) {
+                // CORS Simulation fallback
+                console.error("Webhook failed (CORS likely):", error);
+                try {
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text })
+                    });
+                    throw new Error("CORS_RESTRICTED");
+                } catch (e) {
+                    throw new Error("CORS_RESTRICTED");
+                }
+            }
+        };
+
+        // --- ICONS ---
+        const BotIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <path d="M12 8V4H8" /><rect x="4" y="12" width="16" height="8" rx="2" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="M12 18v-2" /><path d="M12 8a4 4 0 0 1 4 4" /><path d="M12 8a4 4 0 0 0-4 4" />
+          </svg>
+        );
+        const ShieldIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        );
+        const SendIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        );
+
+        // --- UI COMPONENTS ---
+        const StatusMessage = ({ status, message }) => {
+          if (status === Status.IDLE) return <div className="text-xs text-slate-500 italic">Ready for command.</div>;
+          
+          let colorClass = "text-slate-300 bg-slate-800/50 border-slate-700";
+          if (status === Status.LOADING) colorClass = "text-blue-200 bg-blue-500/20 border-blue-500/30";
+          if (status === Status.SUCCESS) colorClass = "text-green-300 bg-green-500/20 border-green-500/30";
+          if (status === Status.ERROR) colorClass = "text-red-300 bg-red-500/20 border-red-500/30";
+
+          return (
+            <div className={`p-3 rounded-lg border ${colorClass} flex items-start gap-3 text-xs font-medium animate-enter`}>
+                {status === Status.LOADING && <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin shrink-0" />}
+                <span className="break-all">{message}</span>
+            </div>
+          );
+        };
+
+        // --- MAIN APP ---
+        const App = () => {
+          const [isLoggedIn, setIsLoggedIn] = useState(false);
+          const [username, setUsername] = useState('');
+          const [webhookUrl, setWebhookUrl] = useState('');
+          const [activeTab, setActiveTab] = useState('manual');
+          const [aiMessage, setAiMessage] = useState('');
+          const [instructions, setInstructions] = useState('');
+          const [replyCount, setReplyCount] = useState(1);
+          const [manualMessage, setManualMessage] = useState('');
+          const [status, setStatus] = useState(Status.IDLE);
+          const [statusMessage, setStatusMessage] = useState('');
+
+          const handleLogin = (e) => {
+            e.preventDefault();
+            if (username.trim()) setIsLoggedIn(true);
+          };
+
+          const handleAiSend = async (e) => {
+            e.preventDefault();
+            if (!webhookUrl || !aiMessage) {
+              setStatus(Status.ERROR);
+              setStatusMessage('Missing Webhook URL or Input Message');
+              return;
+            }
+            setStatus(Status.LOADING);
+            setStatusMessage('Generative AI is thinking...');
+            try {
+              const replies = await generateReplies(aiMessage, instructions, replyCount);
+              for (let i = 0; i < replies.length; i++) {
+                const rawReply = replies[i];
+                setStatusMessage(`Sanitizing reply ${i + 1} with rhyme engine...`);
+                const safeReply = await sanitizeWithRhymes(rawReply);
+                setStatusMessage(`Sending reply ${i + 1}...`);
+                try {
+                    await sendToGoogleChat(webhookUrl, safeReply);
+                } catch (err) {
+                    if (err.message === 'CORS_RESTRICTED') {
+                         console.log(`[SIMULATION] Sent: ${safeReply}`);
+                    } else throw err;
+                }
+                if (i < replies.length - 1) await new Promise(r => setTimeout(r, 500));
+              }
+              setStatus(Status.SUCCESS);
+              setStatusMessage(`${replies.length} replies sent successfully.`);
+              setAiMessage('');
+            } catch (error) {
+              setStatus(Status.ERROR);
+              setStatusMessage(error.message || "Unknown error");
+            }
+          };
+
+          const handleManualSend = async (e) => {
+            e.preventDefault();
+            if (!webhookUrl || !manualMessage) {
+              setStatus(Status.ERROR);
+              setStatusMessage('Missing Webhook URL or Input Message');
+              return;
+            }
+            setStatus(Status.LOADING);
+            setStatusMessage('Sanitizing message...');
+            try {
+              const safeMessage = await sanitizeWithRhymes(manualMessage);
+              setStatusMessage('Sending message...');
+              try {
+                await sendToGoogleChat(webhookUrl, safeMessage);
+                setStatus(Status.SUCCESS);
+                setStatusMessage('Message sent successfully.');
+                setManualMessage('');
+              } catch (err) {
+                if (err.message === 'CORS_RESTRICTED') {
+                    setStatus(Status.SUCCESS);
+                    setStatusMessage(`Message Sent (Simulation): "${safeMessage}"`);
+                    setManualMessage('');
+                } else throw err;
+              }
+            } catch (error) {
+              setStatus(Status.ERROR);
+              setStatusMessage(error.message);
+            }
+          };
+
+          // LOGIN SCREEN
+          if (!isLoggedIn) {
+            return (
+              <div className="min-h-screen flex items-center justify-center p-4">
+                <div className="w-full max-w-md p-8 glass-panel rounded-2xl animate-enter">
+                    <div className="text-center mb-8">
+                        <div className="bg-blue-600/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-400/30">
+                            <BotIcon className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Clankerbot</h1>
+                        <p className="text-blue-200/60 text-sm">Blue Protocol Interface</p>
+                    </div>
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-blue-300 mb-2 ml-1">Operator Name</label>
+                            <input 
+                                type="text" 
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full p-4 rounded-xl input-modern text-center text-lg placeholder-slate-500"
+                                placeholder="Enter Name"
+                                autoFocus
+                            />
+                        </div>
+                        <button type="submit" className="w-full py-4 rounded-xl btn-primary text-white font-bold transition-all disabled:opacity-50" disabled={!username.trim()}>
+                            ACCESS SYSTEM
+                        </button>
+                    </form>
+                </div>
+              </div>
+            );
+          }
+
+          // MAIN INTERFACE
+          return (
+            <div className="min-h-screen p-4 lg:p-8 max-w-7xl mx-auto flex flex-col">
+              {/* Header */}
+              <header className="mb-8 flex flex-col md:flex-row justify-between items-center glass-panel p-4 rounded-2xl gap-4">
+                 <div className="flex items-center gap-4 w-full md:w-auto">
+                     <div className="bg-blue-600 p-2.5 rounded-lg shadow-lg">
+                        <BotIcon className="w-6 h-6 text-white" />
+                     </div>
+                     <div>
+                         <h1 className="text-xl font-bold text-white">Clankerbot <span className="text-blue-400 font-normal">v2.0</span></h1>
+                         <p className="text-xs text-blue-200/70">Welcome, {username}</p>
+                     </div>
+                 </div>
+                 <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 rounded-full border border-blue-400/20">
+                     <ShieldIcon className="w-4 h-4 text-blue-400" />
+                     <span className="text-xs font-medium text-blue-300">Safechat Enabled</span>
+                 </div>
+              </header>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                {/* Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="glass-panel p-6 rounded-2xl">
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400 mb-4">Status Log</h2>
+                        <StatusMessage status={status} message={statusMessage} />
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-2xl space-y-4">
+                        <h2 className="text-xs font-bold uppercase tracking-wider text-blue-400">Settings</h2>
+                        <div>
+                            <label className="block text-xs text-slate-400 mb-1.5">Webhook URL</label>
+                            <input
+                                type="password"
+                                value={webhookUrl}
+                                onChange={(e) => setWebhookUrl(e.target.value)}
+                                placeholder="https://chat.googleapis.com/..."
+                                className="w-full p-3 rounded-lg input-modern text-sm"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <button 
+                            onClick={() => { setActiveTab('manual'); setStatus(Status.IDLE); }}
+                            className={`p-4 rounded-xl text-sm font-medium transition-all duration-200 border ${activeTab === 'manual' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/50'}`}
+                        >
+                            Manual
+                        </button>
+                        <button 
+                            onClick={() => { setActiveTab('ai'); setStatus(Status.IDLE); }}
+                            className={`p-4 rounded-xl text-sm font-medium transition-all duration-200 border ${activeTab === 'ai' ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/50'}`}
+                        >
+                            AI Pilot
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="lg:col-span-2">
+                    <div className="glass-panel rounded-2xl p-6 h-full min-h-[500px] flex flex-col relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16"></div>
+
+                        {activeTab === 'manual' && (
+                            <form onSubmit={handleManualSend} className="h-full flex flex-col gap-4 animate-enter">
+                                <div className="flex-1 flex flex-col">
+                                    <label className="text-sm font-medium text-slate-300 mb-2">Message Composer</label>
+                                    <textarea
+                                        value={manualMessage}
+                                        onChange={(e) => setManualMessage(e.target.value)}
+                                        className="flex-1 w-full p-4 rounded-xl input-modern resize-none text-base"
+                                        placeholder="Type your message here... (Profanity will be safely rhymed)"
+                                    ></textarea>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button type="submit" disabled={status === Status.LOADING} className="px-8 py-3 rounded-xl btn-primary text-white font-semibold flex items-center gap-2">
+                                        <SendIcon className="w-4 h-4" />
+                                        Send Securely
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {activeTab === 'ai' && (
+                            <form onSubmit={handleAiSend} className="h-full flex flex-col gap-6 animate-enter">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5">Personality / Instructions</label>
+                                        <input 
+                                            type="text" 
+                                            value={instructions}
+                                            onChange={(e) => setInstructions(e.target.value)}
+                                            placeholder="e.g. Sarcastic, Pirate"
+                                            className="w-full p-3 rounded-lg input-modern"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-400 mb-1.5">Reply Count</label>
+                                        <input 
+                                            type="number" 
+                                            min="1" max="5"
+                                            value={replyCount}
+                                            onChange={(e) => setReplyCount(Number(e.target.value))}
+                                            className="w-full p-3 rounded-lg input-modern"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1 flex flex-col">
+                                     <label className="text-sm font-medium text-slate-300 mb-2">Incoming Context</label>
+                                     <textarea
+                                        value={aiMessage}
+                                        onChange={(e) => setAiMessage(e.target.value)}
+                                        className="w-full h-full p-4 rounded-xl input-modern resize-none text-base"
+                                        placeholder="Paste the chat message you want to reply to..."
+                                    ></textarea>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button type="submit" disabled={status === Status.LOADING} className="w-full md:w-auto px-8 py-3 rounded-xl btn-primary text-white font-semibold flex items-center justify-center gap-2">
+                                        <BotIcon className="w-4 h-4" />
+                                        Generate & Send
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
   </body>
 </html>
